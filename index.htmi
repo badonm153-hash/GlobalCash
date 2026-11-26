@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Global Cash Rewards</title>
+<script src="https://telegram.org"></script>
+<style>
+*{box-sizing:border-box}
+body{background:#0f0f0f;color:white;font-family:Arial,sans-serif;margin:0;padding:0;padding-bottom:85px}
+.top{padding:15px;text-align:center;position:relative}
+.logo{width:70px;height:70px;background:linear-gradient(135deg,#2AABEE,#00FF88);border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:35px;border:2px solid white}
+.bell{position:absolute;top:15px;right:15px;background:#1e1e1e;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;border:1px solid #333}
+.badge{position:absolute;top:-4px;right:-4px;background:red;color:white;font-size:11px;min-width:18px;height:18px;padding:0 4px;border-radius:10px;display:none;align-items:center;justify-content:center;font-weight:bold}
+.notif-box{display:none;background:#1e1e1e;margin:0 12px 10px;padding:12px;border-radius:12px;text-align:left;border:1px solid #FFC107}
+.notif-item{background:#2a2a2a;padding:10px;border-radius:10px;margin:8px 0;border-left:3px solid #2AABEE}
+.notif-item small{color:#aaa}
+.notice{background:#FFC107;color:#000;margin:12px;padding:10px;border-radius:10px;font-size:12px;text-align:center;font-weight:bold}
+.balance{background:#1e1e1e;margin:0 12px;padding:16px;border-radius:14px;text-align:center;border:1px solid #2AABEE}
+.stats{display:flex;gap:8px;margin:12px}
+.stat{flex:1;background:#1e1e1e;padding:10px;border-radius:10px;font-size:12px;text-align:center}
+.task{background:#1e1e1e;margin:10px 12px;padding:14px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.task b{font-size:15px}
+.task small{color:#aaa;display:block;margin:3px 0}
+.btn{background:#2AABEE;color:white;border:none;padding:10px 16px;border-radius:10px;font-weight:bold;cursor:pointer;white-space:nowrap}
+.btn-green{background:#00C853;color:white;border:none;padding:12px;border-radius:10px;width:100%;font-weight:bold;font-size:15px;cursor:pointer;margin-top:6px}
+.btn-red{background:#FF5252;color:white;border:none;padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer}
+.bottom{position:fixed;bottom:0;left:0;right:0;background:#1a1a1a;display:flex;border-top:1px solid #333;padding:6px 0;z-index:100}
+.bottom button{flex:1;background:none;border:none;color:#aaa;font-size:11px;padding:6px;cursor:pointer}
+.bottom button.active{color:#2AABEE;font-weight:bold}
+.bottom span{font-size:20px;display:block}
+.box{padding:0 12px}
+input,select,textarea{width:100%;padding:12px;margin:6px 0;border-radius:10px;border:1px solid #333;background:#262626;color:white;font-size:14px}
+.card{background:#1e1e1e;padding:15px;border-radius:12px;margin:10px 0;text-align:left}
+#splash{position:fixed;inset:0;background:#0f0f0f;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:990;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:#1e1e1e;padding:20px;border-radius:14px;width:100%;max-width:360px;border:1px solid #2AABEE}
+.admin-badge{background:#00C853;color:#000;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:bold;margin-left:5px}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="logo" style="width:100px;height:100px;font-size:50px">💰</div>
+  <h2>🌍 Global Cash Rewards</h2>
+  <small style="color:#aaa">Connecting to server...</small>
+</div>
+
+<!-- Task Submit Modal -->
+<div id="modal">
+  <div class="modal-box">
+    <h3 id="mTitle" style="margin-top:0">Task Title</h3>
+    <p id="mDesc" style="color:#ccc;font-size:13px"></p>
+    <a id="mLink" href="#" target="_blank" style="display:block;text-align:center;background:#2AABEE;color:white;padding:10px;border-radius:8px;text-decoration:none;font-weight:bold;margin-bottom:10px">🔗 Open Task Link</a>
+    <input id="mProof" placeholder="Enter Proof (Username / Email / Screenshot Link)">
+    <button class="btn-green" onclick="submitTaskProof()">✅ Submit & Claim $<span id="mPrice">0</span></button>
+    <button class="btn-green" style="background:#444;margin-top:8px" onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <div class="top">
+    <div class="bell" onclick="toggleNotif()">🔔<div class="badge" id="badge">0</div></div>
+    <div class="logo">💰</div>
+    <h2 style="margin:8px 0 2px">🌍 Global Cash Rewards</h2>
+    <small style="color:#aaa">Welcome, <b id="showUser" style="color:white">User</b> <span id="adminTag" class="admin-badge" style="display:none">ADMIN</span></small>
+  </div>
+
+  <!-- Notification Box -->
+  <div class="notif-box" id="notifBox">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <b>🔔 Notifications</b>
+      <span onclick="toggleNotif()" style="color:#aaa;font-size:12px;cursor:pointer">✖ Close</span>
+    </div>
+    <div id="notifList"></div>
+  </div>
+
+  <div class="notice">⚠️ NOTICE: 1 Person = 1 Account • No VPN • Fake Submissions Will Result in Permanent Ban</div>
+  
+  <div class="balance">
+    <div style="font-size:13px;color:#aaa">💰 Total Balance</div>
+    <div style="font-size:28px;font-weight:bold;color:#00FF88">$<span id="bal">0.00</span></div>
+    <div style="font-size:12px;color:#aaa">Minimum Withdrawal: $10.00</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">✅ Completed<br><b id="done">0 Tasks</b></div>
+    <div class="stat">👥 Referred<br><b id="refCount">0 Users</b></div>
+    <div class="stat">🎁 Bonus<br><b>$0.50 / Refer</b></div>
+  </div>
+
+  <div id="main"></div>
+
+  <div class="bottom">
+    <button class="active" onclick="nav('home',this)"><span>🏠</span>Home</button>
+    <button onclick="nav('tasks',this)"><span>📋</span>Tasks</button>
+    <button onclick="nav('refer',this)"><span>👥</span>Refer</button>
+    <button onclick="nav('account',this)"><span>👤</span>Account</button>
+    <button onclick="nav('withdraw',this)"><span>📤</span>Withdraw</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://gstatic.com";
+import { getDatabase, ref, set, get, push, onValue, update, remove } from "https://gstatic.com";
+
+// Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAgOJL-0jc4qED36RjYjLJ_1-UHVpnmEIE",
+  authDomain: "://firebaseapp.com",
+  databaseURL: "https://firebaseio.com",
+  projectId: "globalcashrewards-de405",
+  storageBucket: "globalcashrewards-de405.firebasestorage.app",
+  messagingSenderId: "316931015642",
+  appId: "1:316931015642:web:e621d9878ca29a9fa176e3",
+  measurementId: "G-KLK2808JCC"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Admin Telegram ID
+const ADMIN_ID = "7810329612";
+
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+
+// Get Telegram User Details
+const tgUser = tg.initDataUnsafe?.user || { id: 7810329612, first_name: "Admin", username: "admin" };
+const userId = String(tgUser.id);
+const userName = tgUser.first_name + (tgUser.last_name ? " " + tgUser.last_name : "");
+const isAdmin = (userId === ADMIN_ID);
+
+let userData = { bal: 0, done: 0, refers: 0, completedTasks: {} };
+let allTasks = {};
+let allNotifs = {};
+let allWithdraws = {};
+let currentTab = 'home';
+let selectedTaskId = null;
+
+// Initialize User & Real-time Sync
+async function initUser() {
+  const userRef = ref(db, 'users/' + userId);
+  const snap = await get(userRef);
+  
+  if (!snap.exists()) {
+    const startParam = tg.initDataUnsafe?.start_param;
+    let referredBy = null;
+    if (startParam && startParam !== userId) {
+      referredBy = startParam;
+      const refOwnerSnap = await get(ref(db, 'users/' + referredBy));
+      if (refOwnerSnap.exists()) {
+        const ownerData = refOwnerSnap.val();
+        await update(ref(db, 'users/' + referredBy), {
+          bal: (ownerData.bal || 0) + 0.50,
+          refers: (ownerData.refers || 0) + 1
+        });
+      }
+    }
+    await set(userRef, {
+      name: userName,
+      username: tgUser.username || "",
+      bal: 0,
+      done: 0,
+      refers: 0,
+      referredBy: referredBy,
+      joined: new Date().toLocaleDateString()
+    });
+  }
+
+  onValue(userRef, (snapshot) => {
+    if (snapshot.exists()) {
+      userData = snapshot.val();
+      if (!userData.completedTasks) userData.completedTasks = {};
+      document.getElementById('bal').innerText = (userData.bal || 0).toFixed(2);
+      document.getElementById('done').innerText = (userData.done || 0) + ' Tasks';
+      document.getElementById('refCount').innerText = (userData.refers || 0) + ' Users';
+      if (currentTab === 'account') renderTab('account');
+    }
+  });
+
+  onValue(ref(db, 'tasks'), (snapshot) => {
+    allTasks = snapshot.val() || {};
+    if (currentTab === 'home' || currentTab === 'tasks' || currentTab === 'account') {
+      renderTab(currentTab);
+    }
+  });
+
+  onValue(ref(db, 'notifications'), (snapshot) => {
+    allNotifs = snapshot.val() || {};
+    updateNotifUI();
+  });
+
+  if (isAdmin) {
+    document.getElementById('adminTag').style.display = 'inline-block';
+    onValue(ref(db, 'withdraws'), (snapshot) => {
+      allWithdraws = snapshot.val() || {};
+      if (currentTab === 'account') renderTab('account');
+    });
+  }
+
+  document.getElementById('showUser').innerText = userName;
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  renderTab('home');
+}
+
+function updateNotifUI() {
+  const keys = Object.keys(allNotifs);
+  const seen = parseInt(localStorage.getItem('gcr_seen_' + userId) || '0');
+  const unread = keys.length - seen;
